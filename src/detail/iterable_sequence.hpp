@@ -1,5 +1,5 @@
-#ifndef INDEXES_SEQUENCE_HPP
-#define INDEXES_SEQUENCE_HPP
+#ifndef ITERABLE_SEQUENCE_HPP
+#define ITERABLE_SEQUENCE_HPP
 #pragma once
 
 #include <iterator>
@@ -64,4 +64,4 @@ private:
     value_t start_, end_;
 };
 
-#endif // INDEXES_SEQUENCE_HPP
+#endif // ITERABLE_SEQUENCE_HPP

@@ -1,8 +1,11 @@
-#ifndef ALGO_HPP
-#define ALGO_HPP
+#ifndef RL_ALGO_HPP
+#define RL_ALGO_HPP
 #pragma once
 
+#include <list>
+
 #include <detail/traits.hpp>
+#include <detail/ienv.hpp>
 #include <detail/iagent.hpp>
 
 
@@ -43,6 +46,45 @@ struct value_iteration {
 };
 
 
+template<typename DerivedEnv, typename EnvTraits,
+         typename CallablePolicy>
+struct generate_episode {
+
+    using observation_t = typename EnvTraits::observation_t;
+    using observation_list_t = std::list<observation_t>;
+
+public:
+
+    generate_episode(/*const IAgent<DerivedAgent, AgentTraits>& agent,*/
+                     const IEnv<DerivedEnv, EnvTraits>& env,
+                     CallablePolicy policy)
+        : /*agent_(agent),*/ env_(env), policy_(policy)
+    { }
+
+    observation_list_t operator()() {
+        observation_list_t episode;
+
+        env_.reset();
+        observation_t obs = env_.init();
+        while(true) {
+            episode.push_back(obs);
+            auto [state, reward, done] = obs;
+            obs = env_.step(state, policy_(state));
+
+            if(env_.is_terminal(obs)) break;
+        }
+        episode.push_back(obs);
+
+        return episode;
+    }
+
+private:
+    //IAgent<DerivedAgent, AgentTraits> agent_;
+    IEnv<DerivedEnv, EnvTraits> env_;
+    CallablePolicy policy_;
+};
+
+
 } // namespace rl
 
-#endif // ALGO_HPP
+#endif // RL_ALGO_HPP
