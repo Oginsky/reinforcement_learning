@@ -10,12 +10,9 @@ using namespace std;
 
 int main()
 {
-    Task task(0.55);
-    rl::value_iteration{}(task.agent, task);
-
-    write_in_file("value_function.txt", task.agent.v);
-    write_in_file("policy.txt", task.agent.policy_);
-
+    blackjack::Agent agent;
+    blackjack::Env env;
+    rl::first_visit_mc_control{agent, env, 0.05, 100000}();
 
 //    blackjack::Env env;
 //    using traits = blackjack::Env::traits_t;

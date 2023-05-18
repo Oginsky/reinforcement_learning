@@ -5,6 +5,7 @@
 #include <utility>
 #include <fstream>
 #include <map>
+#include <random>
 
 
 template <typename Container>
@@ -37,6 +38,15 @@ void write_if(Value& main_value, Value& value, T& main, T mem_main) {
         main_value = value;
         main = mem_main;
     }
+}
+
+
+bool rand(double prob) {
+    static std::mt19937_64 engine{std::random_device{}()};
+    auto max = engine.max();
+
+    double threshold_value = max * prob;
+    return engine() < threshold_value;
 }
 
 #endif // UTILITY_HPP

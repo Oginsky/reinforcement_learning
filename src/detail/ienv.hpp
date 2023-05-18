@@ -16,6 +16,7 @@ struct IEnv {
     using state_t  = typename traits_t::state_t;
     using reward_t = typename traits_t::reward_t;
     using observation_t = typename traits_t::observation_t;
+    using step_result_t = std::tuple<observation_t, reward_t, bool>;
 
 public:
     IEnv(){
