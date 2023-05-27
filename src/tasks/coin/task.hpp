@@ -30,12 +30,8 @@ public:
     struct Agent : IMDPAgent<Agent, agent_traits>
     {
 
-        double get_value_func_impl(state_t state) {
-           return v[state];
-        }
-
-        void set_value_func_impl(state_t state, double value) {
-            v[state] = value;
+        double& value_func_impl(state_t state) {
+            return v[state];
         }
 
         state_t get_state_impl(state_t state, action_t action) {
@@ -82,10 +78,10 @@ public:
                        s2 = state - action;
 
         return is_terminal_state(s1)
-                ? ph_ + (1.0 - ph_)*(reward + discont*agent.get_value_func(s2))
+                ? ph_ + (1.0 - ph_)*(reward + discont*agent.value_func(s2))
 
-                : ph_*(reward + discont*agent.get_value_func(s1))
-                  +(1.0 - ph_)*(reward + discont*agent.get_value_func(s2));
+                : ph_*(reward + discont*agent.value_func(s1))
+                  +(1.0 - ph_)*(reward + discont*agent.value_func(s2));
     }
 
     bool is_terminal_state(Agent::state_t state) {

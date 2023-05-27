@@ -12,7 +12,9 @@ int main()
 {
     blackjack::Agent agent;
     blackjack::Env env;
-    rl::first_visit_mc_control{agent, env, 0.05, 100000}();
+    rl::first_visit_mc_control(agent, env, 0.05, 100000);
+
+    rl::first_visit_mc_prediction(agent, env, 100);
 
 //    blackjack::Env env;
 //    using traits = blackjack::Env::traits_t;

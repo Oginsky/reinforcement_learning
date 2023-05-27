@@ -8,7 +8,7 @@
 template <typename Action,
           typename State,
           typename Reward = double,
-          typename Observation = std::tuple<State, Reward, bool>>
+          typename Observation = State>
 struct Traits {
     using action_t = Action;
     using state_t = State;

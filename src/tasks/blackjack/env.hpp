@@ -44,7 +44,7 @@ public:
 
     }
 
-    observation_t init_impl() {
+    step_t init_impl() {
         model::card player_card = take_card(model::card::color_e::black),
                     diler_card = take_card(model::card::color_e::black);
         diler_points += diler_card;
@@ -53,15 +53,15 @@ public:
         return std::make_tuple(state, 0.0, false);
     }
 
-    observation_t step_impl(const state_t& state, const action_t& action) {
+    step_t step_impl(const state_t& state, const action_t& action) {
         int player_points = state.first;
         switch (action) {
             case action_t::hit:
             {
                 player_points += take_card();
                 state_t new_state = std::make_pair(player_points, state.second);
-                return (player_points <= 21) ? std::make_tuple(new_state, 0, false)
-                                             : std::make_tuple(new_state, -1, true);
+                return (player_points <= 21) ? std::make_tuple(new_state, 0.0, false)
+                                             : std::make_tuple(new_state, -1.0, true);
             }
 
             case action_t::stick:
@@ -70,18 +70,14 @@ public:
                     diler_points += take_card();
 
                 state_t new_state = std::make_pair(player_points, diler_points);
-                if(diler_points == player_points) return std::make_tuple(new_state, 0, true);
+                if(diler_points == player_points) return std::make_tuple(new_state, 0.0, true);
 
                 return (player_points > diler_points || diler_points < 0 || diler_points > 21)
-                        ? std::make_tuple(new_state, 1, true)
-                        : std::make_tuple(new_state, -1, true);
+                        ? std::make_tuple(new_state, 1.0, true)
+                        : std::make_tuple(new_state, -1.0, true);
             }
         }
         return {};
-    }
-
-    bool is_terminal_impl(const observation_t& observation) {
-        return std::get<2>(observation);
     }
 
     void reset_impl() {
@@ -125,20 +121,12 @@ struct Agent : public IEnvAgent<Agent, env_traits>  {
 
     }
 
-    double get_value_func_impl(state_t state) {
+    double& value_func_impl(state_t state) {
         return value_func[state];
     }
 
-    void set_value_func_impl(state_t state, double value) {
-        value_func[state] = value;
-    }
-
-    double get_value_action_impl(state_t state, action_t action) {
+    double& value_action_impl(state_t state, action_t action) {
         return value_action[state][action];
-    }
-
-    void set_value_action_impl(state_t state, action_t action, double value) {
-        value_action[state][action] = value;
     }
 
     action_t get_best_action_impl(state_t state) {
@@ -147,11 +135,11 @@ struct Agent : public IEnvAgent<Agent, env_traits>  {
     }
 
     state_t get_state_impl(observation_t observation) {
-        return std::get<0>(observation);
+        return observation;
     }
 
     action_t policy_impl(observation_t observation) {
-        state_t state = std::get<0>(observation);
+        state_t state = observation;
         action_t subopti = get_best_action_impl(state);
         action_t other = (subopti == action_t::hit) ? action_t::stick : action_t::hit;
 

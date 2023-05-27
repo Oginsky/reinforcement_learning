@@ -19,12 +19,8 @@ public:
         derived = static_cast<derived_t*>(this);
     }
 
-    double get_value_func(state_t state) {
-        return derived->get_value_func_impl(state);
-    }
-
-    void set_value_func(state_t state, double value) {
-        derived->set_value_func_impl(state, value);
+    double& value_func(state_t state) {
+        return derived->value_func_impl(state);
     }
 
 protected:
@@ -48,12 +44,8 @@ public:
           eps_(eps)
     { }
 
-    double get_value_action(state_t state, action_t action) {
-        return derived->get_value_action_impl(state, action);
-    }
-
-    void set_value_action(state_t state, action_t action, double value) {
-        derived->set_value_action_impl(state, action, value);
+    double& value_action(state_t state, action_t action) {
+        return derived->value_action_impl(state, action);
     }
 
     action_t get_best_action(state_t state) {
