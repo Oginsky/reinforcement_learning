@@ -183,7 +183,10 @@ void first_visit_mc_control(IEnvAgent<DerivedAgent, Traits>& agent,
     using observation_t = typename Traits::observation_t;
     using step_t = typename IEnv<DerivedEnv, Traits>::step_t;
 
-    std::unordered_map<state_t, std::unordered_map<action_t, int>> N;
+    static constexpr double n0 = 100;
+
+    std::unordered_map<state_t, std::unordered_map<action_t, int>> n_sa;
+    std::unordered_map<state_t, int> n_s;
     generate_episode episodes_gen{agent, env, n_episodes};
     typename decltype(episodes_gen)::episode_t episode;
 
@@ -197,13 +200,61 @@ void first_visit_mc_control(IEnvAgent<DerivedAgent, Traits>& agent,
 
             auto it = first_of(episode, state, action);
             if(std::make_reverse_iterator(++it) == step_it) {
-                int n = ++N[state][action];
+                double nsa = ++n_sa[state][action];
+                double ns = ++n_s[state];
                 double q = agent.value_action(state, action);
-                agent.value_action(state, action) = q + (1.0 / n ) * (gain - q);
-                agent.learn(state);
+                agent.value_action(state, action) = q + (1.0 / nsa ) * (gain - q);
+                double eps = n0 / (n0 + ns);
+                agent.update_policy(state, eps);
             }
         }
     }
+}
+
+
+template<typename Traits,
+        typename DerivedAgent,
+        typename DerivedEnv>
+void sarsa(IEnvAgent<DerivedAgent, Traits>& agent,
+           IEnv<DerivedEnv, Traits>& env,
+           double lambda,
+           size_t n_episodes,
+           double discont = 1.0)
+{
+    using state_t = typename Traits::state_t;
+    using action_t = typename Traits::action_t;
+    using observation_t = typename Traits::observation_t;
+    using step_t = typename IEnv<DerivedEnv, Traits>::step_t;
+
+    std::unordered_map<state_t, int> n_s;
+    static constexpr double n0 = 100;
+
+    for(size_t n = 0; n < n_episodes; ++n) {
+        std::unordered_map<state_t, std::unordered_map<action_t, double>> e;
+        auto init_step = env.init();
+        state_t state1 = init_step.obs, state2;
+        action_t action1 = agent.policy(state1), action2;
+
+        while(true) {
+            double ns = n_s[state1];
+            auto [obs, reward, done] = env.step(state1, action1);
+            state2 = obs; action2 = agent.policy(state2);
+
+            double delta = reward + discont*agent.value_action(state2, action2) - agent.value_action(state1, action1);
+            double alpha = n0 / (n0 + ns);
+            e[state1][action1]++;
+
+            agent.for_each([&](state_t state, action_t action){
+                agent.value_action(state, action) += alpha * delta * e[state][action];
+                e[state][action] *= discont * lambda;
+            });
+
+            state1 = state2; action1 = action2;
+            if(done) break;
+        }
+
+    }
+
 }
 
 } // namespace rl

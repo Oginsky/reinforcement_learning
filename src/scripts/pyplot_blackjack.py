@@ -9,8 +9,6 @@ V = {}
 with open('blackjack_value_function.txt', 'r') as file:
     for line in file:
         state_first, state_second, value = line.strip().split(' ')
-        if float(value) > 1:
-            continue
         state = (int(state_first), int(state_second))
         V[state] = float(value)
         

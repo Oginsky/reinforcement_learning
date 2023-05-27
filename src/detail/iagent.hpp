@@ -23,6 +23,21 @@ public:
         return derived->value_func_impl(state);
     }
 
+    template <typename Callable>
+    void for_each_action(state_t state, Callable f) {
+        derived->for_each_action_impl(state, std::move(f));
+    }
+
+    template <typename Callable>
+    void for_each_state(Callable f) {
+        derived->for_each_state_impl(std::move(f));
+    }
+
+    template<typename Callable>
+    void for_each(Callable&& f) {
+        derived->for_each_impl(std::move(f));
+    }
+
 protected:
     derived_t* derived;
 
@@ -52,6 +67,7 @@ public:
         return derived->get_best_action_impl(state);
     }
 
+    // [TODO] type accessor
     state_t get_state(observation_t observation) {
         return derived->get_state_impl(observation);
     }
@@ -60,8 +76,8 @@ public:
         return derived->policy_impl(observation);
     }
 
-    void learn(state_t state) {
-        derived->learn_impl(state);
+    void update_policy(state_t state, double eps) {
+        derived->update_policy_impl(state, eps);
     }
 
 public:
@@ -83,17 +99,6 @@ struct IMDPAgent : public IAgent<Derived, Traits>
 
 public:
     IMDPAgent() : IAgent<Derived, Traits>() { }
-
-
-    template <typename Callable>
-    void for_each_action(state_t state, Callable f) {
-        derived->for_each_action_impl(state, std::move(f));
-    }
-
-    template <typename Callable>
-    void for_each_state(Callable f) {
-        derived->for_each_state_impl(std::move(f));
-    }
 
     iterable_actions_t actions(state_t state) {
         return derived->actions_impl(state);

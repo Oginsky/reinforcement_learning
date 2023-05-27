@@ -146,12 +146,19 @@ struct Agent : public IEnvAgent<Agent, env_traits>  {
         return rand(policy_[state][other]) ? other : subopti;
     }
 
-    void learn_impl(state_t state) {
+    void update_policy_impl(state_t state, double eps) {
         action_t subopti = get_best_action_impl(state);
         action_t other = (subopti == action_t::hit) ? action_t::stick : action_t::hit;
 
-        policy_[state][subopti] = 1.0 - eps_ + eps_ / 2.0;
-        policy_[state][other] = eps_ / 2.0;
+        policy_[state][subopti] = 1.0 - eps + eps / 2.0;
+        policy_[state][other] = eps / 2.0;
+    }
+
+    template<typename Callable>
+    void for_each_impl(Callable&& f) {
+        for(auto& state_it: value_action)
+            for(auto& action_it: state_it.second)
+                f(state_it.first, action_it.first);
     }
 
 public:
