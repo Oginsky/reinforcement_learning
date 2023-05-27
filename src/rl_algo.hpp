@@ -226,22 +226,31 @@ void sarsa(IEnvAgent<DerivedAgent, Traits>& agent,
     using observation_t = typename Traits::observation_t;
     using step_t = typename IEnv<DerivedEnv, Traits>::step_t;
 
+    agent.for_each([&agent](state_t state, action_t action){
+        agent.value_action(state, action) = 0.0;
+    });
+
+
     std::unordered_map<state_t, int> n_s;
+    std::unordered_map<state_t, std::unordered_map<action_t, int>> n_sa;
     static constexpr double n0 = 100;
 
     for(size_t n = 0; n < n_episodes; ++n) {
         std::unordered_map<state_t, std::unordered_map<action_t, double>> e;
+        env.reset();
         auto init_step = env.init();
         state_t state1 = init_step.obs, state2;
         action_t action1 = agent.policy(state1), action2;
 
         while(true) {
-            double ns = n_s[state1];
+            double ns = ++n_s[state1];
+            double nsa = ++n_sa[state1][action1];
             auto [obs, reward, done] = env.step(state1, action1);
             state2 = obs; action2 = agent.policy(state2);
 
             double delta = reward + discont*agent.value_action(state2, action2) - agent.value_action(state1, action1);
-            double alpha = n0 / (n0 + ns);
+            double eps = n0 / (n0 + ns);
+            double alpha = (1.0 / nsa );
             e[state1][action1]++;
 
             agent.for_each([&](state_t state, action_t action){
@@ -249,6 +258,7 @@ void sarsa(IEnvAgent<DerivedAgent, Traits>& agent,
                 e[state][action] *= discont * lambda;
             });
 
+            agent.update_policy(state1, eps);
             state1 = state2; action1 = action2;
             if(done) break;
         }
