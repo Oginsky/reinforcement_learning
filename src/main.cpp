@@ -12,9 +12,12 @@ int main()
 {
     blackjack::Agent agent;
     blackjack::Env env;
-    rl::first_visit_mc_control(agent, env, 0.05, 100000);
+    rl::first_visit_mc_control(agent, env, 0.05, 500000);
 
-    rl::first_visit_mc_prediction(agent, env, 100);
+    converse_value_action(agent.value_action, agent.value_func);
+
+    write_in_file("blackjack_value_function.txt", agent.value_func);
+
 
 //    blackjack::Env env;
 //    using traits = blackjack::Env::traits_t;
