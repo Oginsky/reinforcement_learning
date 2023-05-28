@@ -10,7 +10,7 @@ using namespace std;
 
 
 int main() {
-    Task task(0.4);
+    Task task(0.55);
     rl::value_iteration{}(task.agent, task);
 
     write_in_file("value_function.txt", task.agent.v);

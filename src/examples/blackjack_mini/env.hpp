@@ -111,6 +111,13 @@ struct Agent : public rl::IEnvAgent<Agent, env_traits>  {
     Agent(double eps = 0.0)
         : IEnvAgent(eps)
     {
+        reinit_impl();
+    }
+
+    void reinit_impl() {
+        value_action.clear();
+        value_func.clear();
+        policy_.clear();
 
         for(int i = 0; i < 21; ++i) {
             for(int j = 1; j < 10; ++j) {
@@ -119,7 +126,6 @@ struct Agent : public rl::IEnvAgent<Agent, env_traits>  {
                 value_action[state][action_t::stick] = rand()%100;
             }
         }
-
     }
 
     double& value_func_impl(state_t state) {
@@ -167,38 +173,6 @@ public:
     std::map<state_t, std::map<action_t, double>> value_action;
     std::map<state_t, std::map<action_t, double>> policy_;
 };
-
-
-void task() {
-    Agent agent(0.01);
-    Env env;
-
-    using state_t = Agent::state_t;
-    using action_t = Agent::action_t;
-    using dict_t = std::map<state_t, std::map<action_t, double>>;
-
-    auto mrse = [](dict_t& map, dict_t& val){
-        double res = 0.0;
-        for(auto& state_it: map) {
-            for(auto& action_it: state_it.second) {
-                double dx = map[state_it.first][action_it.first] - val[state_it.first][action_it.first];
-                res += dx*dx;
-            }
-        }
-        return std::sqrt(res);
-    };
-
-    rl::first_visit_mc_control(agent, env, 0.01, 250000);
-    auto value_action_etalon = agent.value_action;
-
-    Agent agents(0.01);
-    Env envs;
-    rl::sarsa(agents, envs, 1.0, 1000);
-
-    double res = mrse(value_action_etalon, agents.value_action);
-    double a = res + 1;
-
-}
 
 } // namespace blackjack
 

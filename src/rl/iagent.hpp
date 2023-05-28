@@ -21,6 +21,10 @@ public:
         derived = static_cast<derived_t*>(this);
     }
 
+    void reinit() {
+        derived->reinit_impl();
+    }
+
     double& value_func(state_t state) {
         return derived->value_func_impl(state);
     }
