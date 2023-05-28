@@ -12,6 +12,8 @@ SOURCES += \
 
 HEADERS += \
     $$PWD/env.hpp \
-    $$PWD/model.hpp
+    $$PWD/model.hpp \
+    agent.hpp \
+    linear_agent.hpp
 
 INCLUDEPATH += $${root_dir}

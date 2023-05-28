@@ -26,23 +26,22 @@ def plot_blackjack_values(V):
 
     fig = plt.figure(figsize=(20, 20))
     ax = fig.add_subplot(projection='3d')
-    ax.set_title('No Usable Ace')
     get_figure(ax)
     plt.show()
 
 def plot_policy(policy):
 
-    def get_Z(x, y, usable_ace):
-        if (x,y,usable_ace) in policy:
-            return policy[x,y,usable_ace]
+    def get_Z(x, y):
+        if (x,y) in policy:
+            return policy[x,y]
         else:
             return 1
 
-    def get_figure(usable_ace, ax):
+    def get_figure(ax):
         x_range = np.arange(11, 22)
         y_range = np.arange(10, 0, -1)
         X, Y = np.meshgrid(x_range, y_range)
-        Z = np.array([[get_Z(x,y,usable_ace) for x in x_range] for y in y_range])
+        Z = np.array([[get_Z(x,y) for x in x_range] for y in y_range])
         surf = ax.imshow(Z, cmap=plt.get_cmap('Pastel2', 2), vmin=0, vmax=1, extent=[10.5, 21.5, 0.5, 10.5])
         plt.xticks(x_range)
         plt.yticks(y_range)
@@ -56,10 +55,7 @@ def plot_policy(policy):
         cbar.ax.set_yticklabels(['0 (STICK)','1 (HIT)'])
             
     fig = plt.figure(figsize=(15, 15))
-    ax = fig.add_subplot(121)
-    ax.set_title('Usable Ace')
-    get_figure(True, ax)
-    ax = fig.add_subplot(122)
+    ax = fig.add_subplot()
     ax.set_title('No Usable Ace')
-    get_figure(False, ax)
+    get_figure(ax)
     plt.show()

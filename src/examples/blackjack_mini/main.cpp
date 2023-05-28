@@ -5,40 +5,11 @@
 #include <rl/algorithm.hpp>
 
 #include "env.hpp"
+#include "agent.hpp"
 
 
 using namespace std;
 
-void task() {
-    blackjack::Agent agent(0.01);
-    blackjack::Env env;
-
-    using state_t = blackjack::Agent::state_t;
-    using action_t = blackjack::Agent::action_t;
-    using dict_t = std::map<state_t, std::map<action_t, double>>;
-
-    auto mrse = [](dict_t& map, dict_t& val){
-        double res = 0.0;
-        for(auto& state_it: map) {
-            for(auto& action_it: state_it.second) {
-                double dx = map[state_it.first][action_it.first] - val[state_it.first][action_it.first];
-                res += dx*dx;
-            }
-        }
-        return std::sqrt(res);
-    };
-
-    rl::first_visit_mc_control(agent, env, 0.01, 250000);
-    auto value_action_etalon = agent.value_action;
-
-    blackjack::Agent agents(0.01);
-    blackjack::Env envs;
-    rl::sarsa(agents, envs, 1.0, 1000);
-
-    double res = mrse(value_action_etalon, agents.value_action);
-    double a = res + 1;
-
-}
 
 int main() {
     // types allias
@@ -75,7 +46,7 @@ int main() {
     // dependence of the standart error on parameter lambda for 1000 episodes
     std::ofstream fout("mse_on_lambda.txt");
     blackjack::Agent sarsa_agent;
-    for(int i = 0; i <= 10; ++i) {
+    for(int i = 10; i <= 10; ++i) {
         sarsa_agent.reinit();
         env.reset();
 
@@ -90,7 +61,7 @@ int main() {
     // dependence of the standart error on the episode number
     fout.open("learning_curve_lambda=1.txt");
     double lambda = 1.0;
-    for(size_t n = 0; n < 1000; ++n) {
+    for(size_t n = 1000; n < 1000; ++n) {
         sarsa_agent.reinit();
         env.reset();
 

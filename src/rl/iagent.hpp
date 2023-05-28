@@ -21,6 +21,8 @@ public:
         derived = static_cast<derived_t*>(this);
     }
 
+    virtual ~IAgent() {}
+
     void reinit() {
         derived->reinit_impl();
     }
@@ -65,6 +67,8 @@ public:
           eps_(eps)
     { }
 
+    virtual ~IEnvAgent() {}
+
     double& value_action(state_t state, action_t action) {
         return derived->value_action_impl(state, action);
     }
@@ -105,6 +109,8 @@ struct IMDPAgent : public IAgent<Derived, Traits>
 
 public:
     IMDPAgent() : IAgent<Derived, Traits>() { }
+
+    virtual ~IMDPAgent() {}
 
     iterable_actions_t actions(state_t state) {
         return derived->actions_impl(state);

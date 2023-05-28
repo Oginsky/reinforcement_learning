@@ -48,6 +48,8 @@ public:
         derived = static_cast<derived_t*>(this);
     }
 
+    virtual ~IEnv() {}
+
     step_t init() {
         return derived->init_impl();
     }
