@@ -7,10 +7,10 @@
 #include <list>
 #include <vector>
 
-#include <detail/traits.hpp>
-#include <detail/ienv.hpp>
-#include <detail/iagent.hpp>
-#include <utility.hpp>
+#include <rl/traits.hpp>
+#include <rl/ienv.hpp>
+#include <rl/iagent.hpp>
+#include <rl/utility.hpp>
 
 
 namespace rl {

@@ -2,7 +2,9 @@
 #define IAGENT_HPP
 #pragma once
 
-#include <detail/traits.hpp>
+#include <rl/traits.hpp>
+
+namespace rl {
 
 template <typename Derived, typename Traits>
 struct IAgent {
@@ -117,5 +119,7 @@ public:
     }
 
 };
+
+} // namespace rl
 
 #endif // IAGENT_HPP

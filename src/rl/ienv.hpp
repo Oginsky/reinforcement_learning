@@ -4,7 +4,10 @@
 
 #include <tuple>
 
-#include <detail/traits.hpp>
+#include <rl/traits.hpp>
+
+
+namespace rl {
 
 
 template <typename Derived, typename Traits>
@@ -61,5 +64,7 @@ private:
     derived_t* derived;
 };
 
+
+} // namespace rl
 
 #endif // IENV_HPP

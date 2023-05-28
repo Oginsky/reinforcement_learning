@@ -5,15 +5,14 @@
 #include <map>
 #include <random>
 
-#include <detail/traits.hpp>
-#include <detail/iagent.hpp>
-#include <detail/ienv.hpp>
-#include <detail/iterable_sequence.hpp>
-#include <rl_algo.hpp>
+#include <rl/traits.hpp>
+#include <rl/iagent.hpp>
+#include <rl/ienv.hpp>
+#include <rl/iterable_sequence.hpp>
+#include <rl/algorithm.hpp>
+#include <rl/utility.hpp>
 
-#include <blackjack/model.hpp>
-
-#include <utility.hpp>
+#include "model.hpp"
 
 
 namespace std {
@@ -30,10 +29,10 @@ struct hash<std::pair<int, int>> {
 
 namespace blackjack {
 
-using env_traits = Traits<model::action_e, std::pair<int, int>>;
+using env_traits = rl::Traits<model::action_e, std::pair<int, int>>;
 
 
-struct Env : IEnv<Env, env_traits> {
+struct Env : rl::IEnv<Env, env_traits> {
 
     static constexpr double discont{1.0};
 
@@ -106,7 +105,7 @@ public:
 };
 
 
-struct Agent : public IEnvAgent<Agent, env_traits>  {
+struct Agent : public rl::IEnvAgent<Agent, env_traits>  {
 
 
     Agent(double eps = 0.0)

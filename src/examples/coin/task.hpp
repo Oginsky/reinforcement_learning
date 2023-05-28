@@ -8,10 +8,9 @@
 #include <random>
 #include <algorithm>
 
-#include <detail/iagent.hpp>
-#include <detail/iterable_sequence.hpp>
-
-#include <utility.hpp>
+#include <rl/iagent.hpp>
+#include <rl/iterable_sequence.hpp>
+#include <rl/utility.hpp>
 
 using std::vector;
 using std::map;
@@ -20,14 +19,14 @@ using std::map;
 struct Task {
 
 public:
-    using agent_traits = MDPTraits<int, int, iterable_sequence, iterable_sequence>;
+    using agent_traits = rl::MDPTraits<int, int, iterable_sequence, iterable_sequence>;
 
     const double reward{0.0};
     const double eps{1.e-5};
     const double discont{1.0};
 
 public:
-    struct Agent : IMDPAgent<Agent, agent_traits>
+    struct Agent : rl::IMDPAgent<Agent, agent_traits>
     {
 
         double& value_func_impl(state_t state) {

@@ -3,6 +3,9 @@
 #pragma once
 
 #include <tuple>
+#include <map>
+
+namespace rl {
 
 
 template <typename Action,
@@ -30,5 +33,8 @@ struct MDPTraits
     using iterable_actions_t = IterableA<action_t>;
     using iterable_states_t = IterableS<state_t>;
 };
+
+
+} // namespace rl
 
 #endif // TRAITS_HPP
