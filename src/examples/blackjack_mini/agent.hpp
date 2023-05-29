@@ -2,6 +2,9 @@
 #define AGENT_HPP
 #pragma once
 
+#include <rl/iagent.hpp>
+#include <rl/utility.hpp>
+
 #include "env.hpp"
 
 

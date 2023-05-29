@@ -57,18 +57,5 @@ int main() {
     }
     fout.close();
 
-    // calc of the learning curve
-    // dependence of the standart error on the episode number
-    fout.open("learning_curve_lambda=1.txt");
-    double lambda = 1.0;
-    for(size_t n = 1000; n < 1000; ++n) {
-        sarsa_agent.reinit();
-        env.reset();
-
-        rl::sarsa(sarsa_agent, env, lambda, n);
-        double mse_val = mse(mc_agent.value_action, sarsa_agent.value_action);
-        fout << n << " " << mse_val << std::endl;
-    }
-
     return 0;
 }
