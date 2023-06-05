@@ -209,8 +209,8 @@ void first_visit_mc_control(IEnvAgent<DerivedAgent, Traits>& agent,
             }
         }
     }
-}
 
+}
 
 template<typename Traits,
         typename DerivedAgent,
@@ -265,6 +265,51 @@ void sarsa(IEnvAgent<DerivedAgent, Traits>& agent,
 
     }
 
+}
+
+template<typename Traits,
+        typename DerivedAgent,
+        typename DerivedEnv,
+        typename Approximation>
+void sarsa(IApproxAgent<DerivedAgent, Traits, Approximation>& agent,
+           IEnv<DerivedEnv, Traits>& env,
+           double lambda,
+           size_t n_episodes,
+           double discont = 1.0)
+{
+    using state_t = typename Traits::state_t;
+    using action_t = typename Traits::action_t;
+    using observation_t = typename Traits::observation_t;
+    using step_t = typename IEnv<DerivedEnv, Traits>::step_t;
+    using approx_state_t = typename Approximation::approx_state_t;
+
+    double eps = agent.eps_;
+    double alpha = 0.01;
+
+    for(size_t n = 0; n < n_episodes; ++n) {
+        Approximation e;
+        env.reset();
+        auto init_step = env.init();
+        state_t state1 = init_step.obs, state2;
+        action_t action1 = agent.policy(state1), action2;
+
+        while(true) {
+            auto [obs, reward, done] = env.step(state1, action1);
+            state2 = obs; action2 = agent.policy(state2);
+            double delta = reward + discont * agent.value_action(state2, action2) - agent.value_action(state1, action1);
+            e(state1, action1) += 1.0;
+
+            agent.for_each([&](state_t state, action_t action){
+                approx_state_t tmp = e(state, action) * alpha * delta;
+                agent.value_action(state, action) += tmp;
+                e(state, action) *= discont * lambda;
+            });
+
+            state1 = state2; action1 = action2;
+            if(done) break;
+        }
+
+    }
 }
 
 } // namespace rl

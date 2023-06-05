@@ -26,14 +26,14 @@
 ### `Monte Carlo` (500 000 эпизодов)
 
 + График функции состояния:
-![state function graph](https://github.com/Oginsky/reinforcement_learning/raw/main/data/graphs/mini_blackjack/value_action_500k_episodes.png)
+![state function graph](https://github.com/Oginsky/reinforcement_learning/raw/main/data/graphs/blackjack_mini/value_function_500k_episodes.png)
 ---
 
 ### `Sarsa(λ)` (10 000 эпизодов)
 
 + Кривая обучения (λ = 0.0)
-![learning curve graph](https://github.com/Oginsky/reinforcement_learning/raw/main/data/graphs/mini_blackjack/mse_episode_lambda=0_10000.png)
+![learning curve graph](https://github.com/Oginsky/reinforcement_learning/raw/main/data/graphs/blackjack_mini/mse_episode_lambda=0_10000.png)
 ---
 
 + Кривая обучения (λ = 1.0)
-![learning curve graph](https://github.com/Oginsky/reinforcement_learning/raw/main/data/graphs/mini_blackjack/mse_episode_lambda=1_10000.png)
+![learning curve graph](https://github.com/Oginsky/reinforcement_learning/raw/main/data/graphs/blackjack_mini/mse_episode_lambda=1_10000.png)

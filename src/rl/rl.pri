@@ -4,6 +4,7 @@ HEADERS += \
     $$PWD/iterable_sequence.hpp \
     $$PWD/traits.hpp \
     $$PWD/algorithm.hpp \
-    $$PWD/utility.hpp
+    $$PWD/utility.hpp \
+    $$PWD/linear_vector.hpp
 
 INCLUDEPATH *= $$PWD

@@ -94,6 +94,46 @@ public:
     double eps_;
 };
 
+template <typename Derived, typename Traits, typename Approximation>
+struct IApproxAgent : public IAgent<Derived, Traits>
+{
+    using traits_t = Traits;
+    using action_t = typename traits_t::action_t;
+    using state_t = typename traits_t::state_t;
+    using observation_t = typename traits_t::observation_t;
+
+    using approx_state_t = typename Approximation::approx_state_t;
+    using IAgent<Derived, Traits>::derived;
+
+public:
+    IApproxAgent(double eps = 0.0)
+        : IAgent<Derived, Traits>(),
+          eps_(eps)
+    { }
+
+    virtual ~IApproxAgent() {}
+
+    approx_state_t value_action(state_t state, action_t action) {
+        return derived->value_action_impl(state, action);
+    }
+
+    action_t get_best_action(state_t state) {
+        return derived->get_best_action_impl(state);
+    }
+
+    action_t policy(observation_t observation) {
+        return derived->policy_impl(observation);
+    }
+
+    void update_policy(state_t state, double eps) {
+        derived->update_policy_impl(state, eps);
+    }
+
+public:
+    double eps_;
+};
+
+
 template <typename Derived, typename Traits>
 struct IMDPAgent : public IAgent<Derived, Traits>
 {
