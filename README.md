@@ -22,13 +22,15 @@ No third-party dependencies, just include the header files
 | `rl::sarsa`                       | Strategy improvement   |
 
 ## Usage
-1. Подключить заголовоный файл
+1. Include a header file
+
 All you have to do is include a single header file:
 ```cpp
 #include <rl/rl.hpp>
 ```
 
 2. Type traits
+
 Types for representing the interaction of an agent with the environment are described in the type traits structure:
 ```cpp
 template <typename Action,              // Actions of an agent with the environment  
@@ -45,6 +47,7 @@ struct Traits {
 ```
 
 3. Enviroment implementation
+
 The `rl::IEnv` interface is provided for enviroment:
 ```cpp
 template <typename Derived, typename Traits>
@@ -71,6 +74,7 @@ public:
 It is necessary to inherit this class and implement the corresponding methods with suffix **_impl**.
 
 4. Agent implementation
+
 The `rl::IEnvAgent` interface is provided for agents that interact with the environment:
 ```cpp
 template <typename Derived, typename Traits>
