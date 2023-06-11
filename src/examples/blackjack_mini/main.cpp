@@ -54,7 +54,7 @@ void linear_sarsa_statistics(blackjack::Env& env, dict_t& value_action) {
     // dependence of the standart error on parameter lambda for 10000 episodes
     // with linear approximation of the state function
     std::ofstream fout("linear_mse_on_lambda.txt");
-    blackjack::LinearAgent linear_agent;
+    blackjack::LinearAgent linear_agent(0.05);
     for(int i = 0; i <= 10; ++i) {
         linear_agent.reinit();
         env.reset();
@@ -79,12 +79,13 @@ void linear_sarsa_statistics(blackjack::Env& env, dict_t& value_action) {
     fout.close();
 }
 
+
 int main() {
     blackjack::Env env;
 
     // calc the true value of the agent state function
     blackjack::Agent mc_agent;
-    rl::first_visit_mc_control(mc_agent, env, 0.05, 500000);
+    rl::first_visit_mc_control(mc_agent, env, 0.05, 500'000);
     converse_value_action(mc_agent.value_action, mc_agent.value_func);
     write_in_file("blackjack_value_function.txt", mc_agent.value_func);
 

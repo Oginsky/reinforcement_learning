@@ -124,9 +124,9 @@ public:
 
     template<typename Callable>
     void for_each_impl(Callable&& f) {
-        for(size_t player_points = 1; player_points < 21; ++player_points) {
-            for(size_t dealer_points = 1; dealer_points < 10; ++dealer_points) {
-                state_t state{player_points, dealer_points};
+        for(auto& player_int: player_intervals) {
+            for(auto& dealer_int: dealer_intervals) {
+                state_t state{player_int.first, dealer_int.second};
                 f(state, action_t::hit);
                 f(state, action_t::stick);
             }

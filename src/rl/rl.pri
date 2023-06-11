@@ -5,6 +5,7 @@ HEADERS += \
     $$PWD/traits.hpp \
     $$PWD/algorithm.hpp \
     $$PWD/utility.hpp \
-    $$PWD/linear_vector.hpp
+    $$PWD/linear_vector.hpp \
+    $$PWD/rl.hpp
 
 INCLUDEPATH *= $$PWD

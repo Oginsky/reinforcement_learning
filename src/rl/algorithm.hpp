@@ -18,7 +18,7 @@ namespace rl {
 
 struct value_iteration {
 
-    value_iteration(double eps = 0.1e-3)
+    value_iteration(double eps = 0.1e-6)
         : eps_(eps) {}
 
     template<typename Derived, typename Traits, typename Model>
@@ -40,9 +40,20 @@ struct value_iteration {
                 }
 
                 agent.value_func(state) = max_gain;
-                agent.policy()[state] = best_action;
+                //agent.policy()[state] = best_action;
                 delta = std::max(delta, std::abs(v - agent.value_func(state)));
             }
+        }
+
+        // reconstruction policy
+        for(state_t state: agent.states()) {
+            double max_gain = 0.0;
+            action_t best_action;
+            for(action_t action: agent.actions(state)) {
+                double est_gain = model.gain(state, action);
+                write_if<std::less>(max_gain, est_gain, best_action, action);
+            }
+            agent.policy()[state] = best_action;
         }
     }
 

@@ -17,7 +17,7 @@ No third-party dependencies, just include the header files
 | method                            | Category               |
 | --------------------------------- | ---------------------- |
 | `rl::value_iteration`             | Strategy improvement   |
-| `rl::first_visit_mc_prediction`   | strategy evaluation    |
+| `rl::first_visit_mc_prediction`   | Strategy evaluation    |
 | `rl::first_visit_mc_control`      | Strategy improvement   |
 | `rl::sarsa`                       | Strategy improvement   |
 
@@ -109,7 +109,7 @@ action_t get_best_action(state_t state) {
 ## Examples of use
 Examples of practical use of the library can be found in [`src/example`](src/examples):
 
-| Task                | Description                                                                                       | Categoty                          |
+| Task                | Description                                                                                       | Category                          |
 | ------------------- | ------------------------------------------------------------------------------------------------- | --------------------------------- |
 | `blackjack_mini`    | Blackjack" card game with simplified rules                                                        | Based on environment interaction  | 
 | `coin`              | Example 4.3. Reinforcement Learning: An Introduction. Richard S. Sutton and Andrew G. Barto.      | Based on mdp                      |

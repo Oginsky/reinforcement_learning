@@ -1,5 +1,5 @@
 # Карточная игра "Blackjack"
-Применение методов `Monte Carlo`и `Sarsa(λ)` на примере карточной игры "Blackjack" с упрощенными правилами.
+Применение методов `Monte Carlo` и `Sarsa(λ)` на примере карточной игры "Blackjack" с упрощенными правилами.
 
 ## Правила
 
@@ -31,9 +31,58 @@
 
 ### `Sarsa(λ)` (10 000 эпизодов)
 
-+ Кривая обучения (λ = 0.0)
-![learning curve graph](https://github.com/Oginsky/reinforcement_learning/raw/main/data/graphs/blackjack_mini/mse_episode_lambda=0_10000.png)
+<details>
+<summary>Кривая обучения (λ = 0.0)</summary>
+<img alt="learning curve graph" src="https://github.com/Oginsky/reinforcement_learning/raw/main/data/graphs/blackjack_mini/mse_episode_lambda=0_10000.png" alt=""></img>
+</details>
+
+<details>
+<summary>Кривая обучения (λ = 1.0)</summary>
+<img alt="learning curve graph" src="https://github.com/Oginsky/reinforcement_learning/raw/main/data/graphs/blackjack_mini/mse_episode_lambda=1_10000.png" alt=""></img>
+</details>
+
+<details>
+<summary>Зависимость среднеквадратической ошибки от λ</summary>
+<img alt="learning curve graph" src="https://github.com/Oginsky/reinforcement_learning/raw/main/data/graphs/blackjack_mini/mse_on_lambda_10000e.png" alt=""></img>
+</details>
+
 ---
 
-+ Кривая обучения (λ = 1.0)
-![learning curve graph](https://github.com/Oginsky/reinforcement_learning/raw/main/data/graphs/blackjack_mini/mse_episode_lambda=1_10000.png)
+
+## Линейная аппроксимация на основе грубого кодирования (coarse coding)
+
+> В этом разделе приводятся результаты аппроксимации состояния агента. 
+> Используется бинарный вектор признаков 𝜙(𝑠, 𝑎) с 3 ∗ 6 ∗ 2 = 36 признаками. Каждый
+> бинарный признак имеет значение 1, если (𝑠, 𝑎) лежит в кубоиде состояния, соответствующего
+> этому признаку, и действия, соответствующему этому признаку. Кубоиды имеют следующие
+> пересекающиеся интервалы:
+
+> 𝑑𝑒𝑎𝑙𝑒𝑟(𝑠) = {[1,4],[4,7],[7,10]} <br>
+> 𝑝𝑙𝑎𝑦𝑒𝑟(𝑠) = {[1,6],[4,9],[7,12],[10,15],[13,18],[16,21]} <br>
+> 𝑎 = {ℎ𝑖𝑡, 𝑠𝑡𝑖𝑐𝑘} <br>
+
+> функции ценности аппроксимируется: <br>
+> 𝑄(𝑠, 𝑎) = 𝜙(𝑠, 𝑎)𝑇θ
+
+### `Monte Carlo` (100 000 эпизодов)
+
++ График функции состояния:
+![state function graph](https://github.com/Oginsky/reinforcement_learning/raw/main/data/graphs/blackjack_mini/linear_value_function_100k_episodes.png)
+---
+
+### `Sarsa(λ)` (10 000 эпизодов)
+
+<details>
+<summary>Кривая обучения (λ = 0.0)</summary>
+<img alt="learning curve graph" src="https://github.com/Oginsky/reinforcement_learning/raw/main/data/graphs/blackjack_mini/linear_mse_episode_lambda=0_10000.png" alt=""></img>
+</details>
+
+<details>
+<summary>Кривая обучения (λ = 1.0)</summary>
+<img alt="learning curve graph" src="https://github.com/Oginsky/reinforcement_learning/raw/main/data/graphs/blackjack_mini/linear_mse_episode_lambda=1_10000.png" alt=""></img>
+</details>
+
+<details>
+<summary>Зависимость среднеквадратической ошибки от λ</summary>
+<img alt="learning curve graph" src="https://github.com/Oginsky/reinforcement_learning/raw/main/data/graphs/blackjack_mini/linear_mse_on_lambda_10000e.png" alt=""></img>
+</details>
