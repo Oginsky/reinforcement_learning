@@ -9,6 +9,10 @@
 
 namespace rl {
 
+//fwd
+template <typename Derived, typename Traits>
+struct IAgent;
+
 
 template <typename Derived, typename Traits>
 struct IEnv {
@@ -16,10 +20,14 @@ struct IEnv {
 
     using traits_t = Traits;
     using action_t = typename traits_t::action_t;
-    using state_t  = typename traits_t::state_t;
     using reward_t = typename traits_t::reward_t;
     using observation_t = typename traits_t::observation_t;
     using step_tuple_t = std::tuple<observation_t, reward_t, bool>;
+
+public:
+    // fwd
+    struct step;
+    using step_t = step;
 
     struct step {
         observation_t obs;
@@ -41,7 +49,6 @@ struct IEnv {
         }
     };
 
-    using step_t = step;
 
 public:
     IEnv(){
@@ -50,12 +57,14 @@ public:
 
     virtual ~IEnv() {}
 
-    step_t init() {
-        return derived->init_impl();
+    template <typename DerivedAgent, typename AgentTraits>
+    step_t init(const IAgent<DerivedAgent, AgentTraits>& agent) {
+        return derived->init_impl(agent.id());
     }
 
-    step_t step(const state_t& state, const action_t& action) {
-        return derived->step_impl(state, action);
+    template <typename DerivedAgent, typename AgentTraits>
+    step_t step(const IAgent<DerivedAgent, AgentTraits>& agent, const action_t& action) {
+        return derived->step_impl(agent.id(), action);
     }
 
     void reset() {

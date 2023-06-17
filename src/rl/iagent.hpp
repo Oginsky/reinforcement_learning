@@ -17,7 +17,9 @@ struct IAgent {
 
 public:
 
-    IAgent() {
+    IAgent()
+        : id_(next_id())
+    {
         derived = static_cast<derived_t*>(this);
     }
 
@@ -46,8 +48,18 @@ public:
         derived->for_each_impl(std::move(f));
     }
 
+    size_t id() const { return id_; }
+
 protected:
     derived_t* derived;
+
+private:
+    size_t next_id() {
+        static size_t ID_{0};
+        return ++ID_;
+    }
+
+    size_t id_;
 
 };
 
@@ -62,9 +74,8 @@ struct IEnvAgent : public IAgent<Derived, Traits>
     using IAgent<Derived, Traits>::derived;
 
 public:
-    IEnvAgent(double eps = 0.0)
-        : IAgent<Derived, Traits>(),
-          eps_(eps)
+    IEnvAgent()
+        : IAgent<Derived, Traits>()
     { }
 
     virtual ~IEnvAgent() {}
@@ -77,9 +88,8 @@ public:
         return derived->get_best_action_impl(state);
     }
 
-    // [TODO] type accessor
-    state_t get_state(observation_t observation) {
-        return derived->get_state_impl(observation);
+    state_t observe(observation_t observation) {
+        return derived->observe_impl(observation);
     }
 
     action_t policy(observation_t observation) {
@@ -91,7 +101,6 @@ public:
     }
 
 public:
-    double eps_;
 };
 
 template <typename Derived, typename Traits, typename Approximation>

@@ -10,12 +10,13 @@
 
 namespace blackjack {
 
+using agent_traits = rl::AgentTraits<env_traits_, std::pair<int, int>>;
 
-struct Agent : public rl::IEnvAgent<Agent, env_traits>  {
+struct Agent : public rl::IEnvAgent<Agent, agent_traits>  {
 
 
-    Agent(double eps = 0.0)
-        : IEnvAgent(eps)
+    Agent()
+        : IEnvAgent()
     {
         reinit_impl();
     }
@@ -28,8 +29,8 @@ struct Agent : public rl::IEnvAgent<Agent, env_traits>  {
         for(int i = 0; i < 21; ++i) {
             for(int j = 1; j < 10; ++j) {
                 state_t state{i, j};
-                value_action[state][action_t::hit] = rand()%100;
-                value_action[state][action_t::stick] = rand()%100;
+                value_action[state][action_t::hit] = 0.0;
+                value_action[state][action_t::stick] = 0.0;
             }
         }
     }
@@ -47,7 +48,7 @@ struct Agent : public rl::IEnvAgent<Agent, env_traits>  {
                 ? action_t::hit : action_t::stick;
     }
 
-    state_t get_state_impl(observation_t observation) {
+    state_t observe_impl(observation_t observation) {
         return observation;
     }
 

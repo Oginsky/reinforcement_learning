@@ -38,15 +38,20 @@ void sarsa_statistic(blackjack::Env& env, dict_t& value_action) {
     // dependence of the standart error on parameter lambda for 10000 episodes
     std::ofstream fout("mse_on_lambda.txt");
     blackjack::Agent sarsa_agent;
+    rl::parameters_set params(1.0,
+                              10'000,
+                              [](int n){return 1.0 / n;},
+                              [](int n){return 100.0 / (100.0 + n);});
     for(int i = 0; i <= 10; ++i) {
         sarsa_agent.reinit();
         env.reset();
 
         double lambda = 0.1 * i;
-        rl::sarsa(sarsa_agent, env, lambda, 10000);
+        rl::sarsa(sarsa_agent, env, lambda, params);
         double mse_val = mse(value_action, sarsa_agent.value_action);
         fout << lambda << " " << mse_val << std::endl;
     }
+
     fout.close();
 }
 
@@ -55,12 +60,13 @@ void linear_sarsa_statistics(blackjack::Env& env, dict_t& value_action) {
     // with linear approximation of the state function
     std::ofstream fout("linear_mse_on_lambda.txt");
     blackjack::LinearAgent linear_agent(0.05);
+    rl::parameters_set params = rl::create_default_params_set(1.0, 10'000, 0.01, 0.05);
     for(int i = 0; i <= 10; ++i) {
         linear_agent.reinit();
         env.reset();
 
         double lambda = 0.1 * i;
-        rl::sarsa(linear_agent, env, lambda, 10000);
+        rl::sarsa(linear_agent, env, lambda, params);
 
         dict_t q;
         std::map<state_t, double> value_func;
@@ -79,13 +85,18 @@ void linear_sarsa_statistics(blackjack::Env& env, dict_t& value_action) {
     fout.close();
 }
 
-
 int main() {
     blackjack::Env env;
 
     // calc the true value of the agent state function
     blackjack::Agent mc_agent;
-    rl::first_visit_mc_control(mc_agent, env, 0.05, 500'000);
+    rl::parameters_set params(1.0,
+                              500'000,
+                              [](int n){return 1.0 / (double)n;},
+                              [](int n){return 100.0 / (100.0 + n);});
+
+
+    rl::first_visit_mc_control(mc_agent, env, params);
     converse_value_action(mc_agent.value_action, mc_agent.value_func);
     write_in_file("blackjack_value_function.txt", mc_agent.value_func);
 

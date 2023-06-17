@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <list>
 #include <vector>
+#include <functional>
 
 #include <rl/traits.hpp>
 #include <rl/ienv.hpp>
@@ -13,8 +14,52 @@
 #include <rl/utility.hpp>
 
 
-namespace rl {
+namespace rl::algorithms {
 
+
+struct parameters_set {
+
+    using lambda_t = std::function<double(int n)>;
+
+    parameters_set() = delete;
+    parameters_set(const parameters_set& other) = default;
+    parameters_set(parameters_set&& other) = default;
+    ~parameters_set() = default;
+
+    template <typename Func1, typename Func2>
+    parameters_set(double discont, size_t episodes, Func1&& rate, Func2&& prob)
+        : discont(discont), episodes_count(episodes),
+          learning_rate(std::move(rate)), exploration_prob(std::move(prob))
+    { }
+
+public:
+    double discont;
+    size_t episodes_count;
+    lambda_t learning_rate;
+    lambda_t exploration_prob;
+
+public:
+    parameters_set& set_discont(double val) { discont = val; return *this; }
+    parameters_set& set_episodes(size_t val) { episodes_count = val; return *this; }
+
+    template <typename Func>
+    parameters_set& set_learning_rate(Func&& lambda) {
+        learning_rate = std::move(lambda);
+        return *this;
+    }
+    template <typename Func>
+    parameters_set& set_exploration_prob(Func&& lambda) {
+        exploration_prob = std::move(lambda);
+        return *this;
+    }
+
+};
+
+parameters_set create_default_params_set(double discont, size_t episodes, double rate, double prob) {
+    return parameters_set(discont, episodes,
+                          [rate](int){return rate;},
+                          [prob](int){return prob;});
+}
 
 struct value_iteration {
 
@@ -61,15 +106,18 @@ struct value_iteration {
 };
 
 
-template<typename Traits,
+template<typename AgentTraits,
+         typename EnvTraits,
          typename DerivedAgent,
          typename DerivedEnv>
 struct generate_episode {
 
-    using action_t = typename Traits::action_t;
-    using state_t = typename Traits::state_t;
-    using observation_t = typename Traits::observation_t;
-    using step_t = typename IEnv<DerivedEnv, Traits>::step_t;
+    using agent_traits = AgentTraits;
+    using env_traits = EnvTraits;
+    using action_t = typename AgentTraits::action_t;
+    using state_t = typename AgentTraits::state_t;
+    using observation_t = typename AgentTraits::observation_t;
+    using step_t = typename IEnv<DerivedEnv, EnvTraits>::step_t;
 
     struct result {
         step_t step;
@@ -80,8 +128,8 @@ struct generate_episode {
 
 public:
 
-    generate_episode(const IEnvAgent<DerivedAgent, Traits>& agent,
-                     const IEnv<DerivedEnv, Traits>& env,
+    generate_episode(const IEnvAgent<DerivedAgent, agent_traits>& agent,
+                     const IEnv<DerivedEnv, env_traits>& env,
                      size_t count)
         : agent_(agent), env_(env), current_(0), count_(count)
     { }
@@ -90,13 +138,13 @@ public:
         episode_t episode;
 
         env_.reset();
-        step_t step = env_.init();
+        step_t step = env_.init(agent_);
         action_t action;
         while(!step.done) {
             action = agent_.policy(step.obs);
             episode.push_back({step, action});
 
-            step = env_.step(step.obs, action);
+            step = env_.step(agent_, action);
             episode.back().step.reward = step.reward;
         }
 
@@ -113,33 +161,37 @@ public:
         return true;
     }
 
+    episode_t empty_episode() {
+        return {};
+    }
+
 private:
-    IEnvAgent<DerivedAgent, Traits> agent_;
-    IEnv<DerivedEnv, Traits> env_;
+    IEnvAgent<DerivedAgent, AgentTraits> agent_;
+    IEnv<DerivedEnv, EnvTraits> env_;
     size_t current_{0};
     size_t count_{0};
 };
 
 
-template<typename Traits,
+template<typename AgentTraits,
+         typename EnvTraits,
          typename DerivedAgent,
          typename DerivedEnv>
 struct first_visit_mc_prediction {
 
-    using state_t = typename Traits::state_t;
+    using state_t = typename AgentTraits::state_t;
 
 public:
-    first_visit_mc_prediction(IEnvAgent<DerivedAgent, Traits>& agent,
-                              IEnv<DerivedEnv, Traits>& env,
-                              size_t n_episodes,
-                              double discont = 1.0)
-        : agent_(agent), env_(env), n_episodes_(n_episodes), discont_(discont)
+    first_visit_mc_prediction(IEnvAgent<DerivedAgent, AgentTraits>& agent,
+                              IEnv<DerivedEnv, EnvTraits>& env,
+                              parameters_set params)
+        : agent_(agent), env_(env), params_(params)
     { }
 
     void operator()() {
         std::unordered_map<state_t, int> N;
-        generate_episode episodes_gen(agent_, env_, n_episodes_);
-        typename decltype(episodes_gen)::episode_t episode;
+        generate_episode episodes_gen(agent_, env_, params_.episodes_count);
+        auto episode = episodes_gen.empty_episode();
 
         while(episodes_gen >> episode) {
             double gain = 0.0;
@@ -147,7 +199,7 @@ public:
             for(auto obs_it = episode.rbegin(); obs_it != episode.rend(); ++obs_it, --obs_idx) {
                 auto [state, reward, done] = (*obs_it).step;
 
-                gain = discont_*gain + reward;
+                gain = params_.discont*gain + reward;
                 auto state_it = std::find_if(episode.begin(), episode.begin()+obs_idx,
                         [state](const auto& step) {return step.step.obs == state;});
 
@@ -161,10 +213,9 @@ public:
     }
 
 private:
-    IEnvAgent<DerivedAgent, Traits> agent_;
-    IEnv<DerivedEnv, Traits> env_;
-    int n_episodes_;
-    double discont_;
+    IEnvAgent<DerivedAgent, AgentTraits> agent_;
+    IEnv<DerivedEnv, EnvTraits> env_;
+    parameters_set params_;
 };
 
 
@@ -180,96 +231,81 @@ auto first_of(const Episode& episode, const State& state, const Action& action) 
     return std::find_if(begin(episode), end(episode), compare);
 }
 
-template<typename Traits,
-        typename DerivedAgent,
-        typename DerivedEnv>
-void first_visit_mc_control(IEnvAgent<DerivedAgent, Traits>& agent,
-                            IEnv<DerivedEnv, Traits>& env,
-                            double eps,
-                            int n_episodes,
-                            double discont = 1.0)
+template<typename AgentTraits,
+         typename EnvTraits,
+         typename DerivedAgent,
+         typename DerivedEnv>
+void first_visit_mc_control(IEnvAgent<DerivedAgent, AgentTraits>& agent,
+                            IEnv<DerivedEnv, EnvTraits>& env,
+                            parameters_set params)
 {
-    using state_t = typename Traits::state_t;
-    using action_t = typename Traits::action_t;
-    using observation_t = typename Traits::observation_t;
-    using step_t = typename IEnv<DerivedEnv, Traits>::step_t;
-
-    static constexpr double n0 = 100;
+    using state_t = typename AgentTraits::state_t;
+    using action_t = typename AgentTraits::action_t;
 
     std::unordered_map<state_t, std::unordered_map<action_t, int>> n_sa;
     std::unordered_map<state_t, int> n_s;
-    generate_episode episodes_gen{agent, env, n_episodes};
-    typename decltype(episodes_gen)::episode_t episode;
+    generate_episode episodes_gen{agent, env, params.episodes_count};
+    auto episode = episodes_gen.empty_episode();
 
     while(episodes_gen >> episode) {
         double gain{0.0};
         for(auto step_it = episode.rbegin(); step_it != episode.rend(); ++step_it) {
             auto [obs, reward, done] = (*step_it).step;
-            state_t state = obs;
+            state_t state = agent.observe(obs);
             action_t action = (*step_it).action;
-            gain = discont*gain + reward;
-
+            gain = params.discont*gain + reward;
             auto it = first_of(episode, state, action);
             if(std::make_reverse_iterator(++it) == step_it) {
                 double nsa = ++n_sa[state][action];
                 double ns = ++n_s[state];
                 double q = agent.value_action(state, action);
                 agent.value_action(state, action) = q + (1.0 / nsa ) * (gain - q);
-                double eps = n0 / (n0 + ns);
-                agent.update_policy(state, eps);
+                agent.update_policy(state, params.exploration_prob(ns));
             }
         }
     }
 
 }
 
-template<typename Traits,
-        typename DerivedAgent,
-        typename DerivedEnv>
-void sarsa(IEnvAgent<DerivedAgent, Traits>& agent,
-           IEnv<DerivedEnv, Traits>& env,
+template<typename AgentTraits,
+         typename EnvTraits,
+         typename DerivedAgent,
+         typename DerivedEnv>
+void sarsa(IEnvAgent<DerivedAgent, AgentTraits>& agent,
+           IEnv<DerivedEnv, EnvTraits>& env,
            double lambda,
-           size_t n_episodes,
-           double discont = 1.0)
+           parameters_set params)
 {
-    using state_t = typename Traits::state_t;
-    using action_t = typename Traits::action_t;
-    using observation_t = typename Traits::observation_t;
-    using step_t = typename IEnv<DerivedEnv, Traits>::step_t;
-
-    agent.for_each([&agent](state_t state, action_t action){
-        agent.value_action(state, action) = 0.0;
-    });
-
+    using state_t = typename AgentTraits::state_t;
+    using action_t = typename AgentTraits::action_t;
+    using observation_t = typename AgentTraits::observation_t;
+    using step_t = typename IEnv<DerivedEnv, AgentTraits>::step_t;
 
     std::unordered_map<state_t, int> n_s;
     std::unordered_map<state_t, std::unordered_map<action_t, int>> n_sa;
-    static constexpr double n0 = 100;
 
-    for(size_t n = 0; n < n_episodes; ++n) {
+    for(size_t n = 0; n < params.episodes_count; ++n) {
         std::unordered_map<state_t, std::unordered_map<action_t, double>> e;
         env.reset();
-        auto init_step = env.init();
-        state_t state1 = init_step.obs, state2;
+        auto init_step = env.init(agent);
+        state_t state1 = agent.observe(init_step.obs), state2;
         action_t action1 = agent.policy(state1), action2;
 
         while(true) {
             double ns = ++n_s[state1];
             double nsa = ++n_sa[state1][action1];
-            auto [obs, reward, done] = env.step(state1, action1);
-            state2 = obs; action2 = agent.policy(state2);
+            auto [obs, reward, done] = env.step(agent, action1);
+            state2 = agent.observe(obs); action2 = agent.policy(state2);
 
-            double delta = reward + discont*agent.value_action(state2, action2) - agent.value_action(state1, action1);
-            double eps = n0 / (n0 + ns);
-            double alpha = (1.0 / nsa );
+            double delta = reward + params.discont*agent.value_action(state2, action2) - agent.value_action(state1, action1);
             e[state1][action1]++;
 
             agent.for_each([&](state_t state, action_t action){
-                agent.value_action(state, action) += alpha * delta * e[state][action];
-                e[state][action] *= discont * lambda;
+                agent.value_action(state, action) += params.learning_rate(nsa) * delta * e[state][action];
+                e[state][action] *= params.discont * lambda;
             });
 
-            agent.update_policy(state1, eps);
+            agent.update_policy(state1, params.exploration_prob(ns));
             state1 = state2; action1 = action2;
             if(done) break;
         }
@@ -278,34 +314,34 @@ void sarsa(IEnvAgent<DerivedAgent, Traits>& agent,
 
 }
 
-template<typename Traits,
-        typename DerivedAgent,
-        typename DerivedEnv,
-        typename Approximation>
-void sarsa(IApproxAgent<DerivedAgent, Traits, Approximation>& agent,
-           IEnv<DerivedEnv, Traits>& env,
+template<typename AgentTraits,
+         typename EnvTraits,
+         typename DerivedAgent,
+         typename DerivedEnv,
+         typename Approximation>
+void sarsa(IApproxAgent<DerivedAgent, AgentTraits, Approximation>& agent,
+           IEnv<DerivedEnv, EnvTraits>& env,
            double lambda,
-           size_t n_episodes,
-           double discont = 1.0)
+           parameters_set params)
 {
-    using state_t = typename Traits::state_t;
-    using action_t = typename Traits::action_t;
-    using observation_t = typename Traits::observation_t;
-    using step_t = typename IEnv<DerivedEnv, Traits>::step_t;
+    using state_t = typename AgentTraits::state_t;
+    using action_t = typename AgentTraits::action_t;
+    using observation_t = typename AgentTraits::observation_t;
+    using step_t = typename IEnv<DerivedEnv, AgentTraits>::step_t;
     using approx_state_t = typename Approximation::approx_state_t;
 
-    double eps = agent.eps_;
     double alpha = 0.01;
+    double discont = params.discont;
 
-    for(size_t n = 0; n < n_episodes; ++n) {
+    for(size_t n = 0; n < params.episodes_count; ++n) {
         Approximation e;
         env.reset();
-        auto init_step = env.init();
+        auto init_step = env.init(agent);
         state_t state1 = init_step.obs, state2;
         action_t action1 = agent.policy(state1), action2;
 
         while(true) {
-            auto [obs, reward, done] = env.step(state1, action1);
+            auto [obs, reward, done] = env.step(agent, action1);
             state2 = obs; action2 = agent.policy(state2);
             double delta = reward + discont * agent.value_action(state2, action2) - agent.value_action(state1, action1);
             e(state1, action1) += 1.0;
@@ -323,6 +359,23 @@ void sarsa(IApproxAgent<DerivedAgent, Traits, Approximation>& agent,
     }
 }
 
+} // namespace rl::algorithms
+
+
+namespace rl {
+
+using rl::algorithms::parameters_set;
+using rl::algorithms::create_default_params_set;
+using rl::algorithms::generate_episode;
+
+using rl::algorithms::value_iteration;
+
+using rl::algorithms::first_visit_mc_prediction;
+using rl::algorithms::first_visit_mc_control;
+using rl::algorithms::sarsa;
+
+
 } // namespace rl
+
 
 #endif // RL_ALGO_HPP

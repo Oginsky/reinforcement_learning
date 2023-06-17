@@ -26,9 +26,10 @@ struct hash<std::pair<int, int>> {
 namespace blackjack {
 
 using env_traits = rl::Traits<model::action_e, std::pair<int, int>>;
+using env_traits_ = rl::EnvTraits<std::pair<int, int>, model::action_e>;
 
 
-struct Env : rl::IEnv<Env, env_traits> {
+struct Env : rl::IEnv<Env, env_traits_> {
 
     static constexpr double discont{1.0};
 
@@ -40,22 +41,22 @@ public:
 
     }
 
-    step_t init_impl() {
+    step_t init_impl(size_t agent_id) {
         model::card player_card = take_card(model::card::color_e::black),
                     diler_card = take_card(model::card::color_e::black);
-        diler_points += diler_card;
+        diler_points = diler_card;
+        players_points_[agent_id] = static_cast<int>(player_card);
 
-        state_t state = std::make_pair(static_cast<int>(player_card), static_cast<int>(diler_card));
+        observation_t state = std::make_pair(static_cast<int>(player_card), static_cast<int>(diler_card));
         return std::make_tuple(state, 0.0, false);
     }
 
-    step_t step_impl(const state_t& state, const action_t& action) {
-        int player_points = state.first;
+    step_t step_impl(size_t agent_id, const action_t& action) {
         switch (action) {
             case action_t::hit:
             {
-                player_points += take_card();
-                state_t new_state = std::make_pair(player_points, state.second);
+                double player_points = players_points_[agent_id] += take_card();
+                observation_t new_state = std::make_pair(player_points, diler_points);
                 return (player_points <= 21 && player_points > 0)
                                              ? std::make_tuple(new_state, 0.0, false)
                                              : std::make_tuple(new_state, -1.0, true);
@@ -63,10 +64,11 @@ public:
 
             case action_t::stick:
             {
+                double player_points = players_points_[agent_id];
                 while(diler_points < 17 && diler_points > 0)
                     diler_points += take_card();
 
-                state_t new_state = std::make_pair(player_points, diler_points);
+                observation_t new_state = std::make_pair(player_points, diler_points);
                 if(diler_points == player_points) return std::make_tuple(new_state, 0.0, true);
 
                 return (player_points > diler_points || diler_points < 0 || diler_points > 21)
@@ -79,6 +81,8 @@ public:
 
     void reset_impl() {
         diler_points = 0;
+        for(auto& [key, value]: players_points_)
+            players_points_[key] = 0;
     }
 
     model::card take_card() {
@@ -98,6 +102,7 @@ public:
     std::mt19937_64 engine{std::random_device{}()};
     std::uniform_int_distribution<int64_t> distr{0, 1000};
     int diler_points = 0;
+    std::map<size_t, int> players_points_;
 };
 
 } // namespace blackjack
