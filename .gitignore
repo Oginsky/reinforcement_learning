@@ -1,0 +1,12 @@
+bin/*
+build*
+
+*.pro
+*.user
+
+*.sln
+*.bat
+*.idea
+*.vcxproj*
+*.vs
+*.qmake*
