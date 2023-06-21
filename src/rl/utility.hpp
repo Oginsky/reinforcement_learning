@@ -17,7 +17,7 @@ bool write_in_file(std::string filename, Container& container) {
         fout << item << " ";
 
     return true;
-}
+} 
 
 template <typename K, typename V>
 bool write_in_file(std::string filename, std::map<K, V>& container) {
