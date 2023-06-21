@@ -52,8 +52,7 @@ struct Agent : public rl::IEnvAgent<Agent, agent_traits>  {
         return observation;
     }
 
-    action_t policy_impl(observation_t observation) {
-        state_t state = observation;
+    action_t policy_impl(state_t& state, double eps) {
         action_t subopti = get_best_action_impl(state);
         action_t other = (subopti == action_t::hit) ? action_t::stick : action_t::hit;
 

@@ -105,7 +105,6 @@ struct value_iteration {
     double eps_;
 };
 
-
 template<typename AgentTraits,
          typename EnvTraits,
          typename DerivedAgent,
@@ -141,7 +140,7 @@ public:
         step_t step = env_.init(agent_);
         action_t action;
         while(!step.done) {
-            action = agent_.policy(step.obs);
+            action = agent_.policy(agent_.observe(step.obs));
             episode.push_back({step, action});
 
             step = env_.step(agent_, action);
@@ -171,7 +170,6 @@ private:
     size_t current_{0};
     size_t count_{0};
 };
-
 
 template<typename AgentTraits,
          typename EnvTraits,
@@ -218,7 +216,6 @@ private:
     parameters_set params_;
 };
 
-
 template <typename Episode, typename State, typename Action>
 auto first_of(const Episode& episode, const State& state, const Action& action) {
     const auto compare = [state, action](const typename Episode::value_type& step) {
@@ -264,7 +261,48 @@ void first_visit_mc_control(IEnvAgent<DerivedAgent, AgentTraits>& agent,
             }
         }
     }
+}
 
+template<typename AgentTraits,
+         typename EnvTraits,
+         typename DerivedAgent,
+         typename DerivedEnv>
+void q_learning(IEnvAgent<DerivedAgent, AgentTraits>& agent,
+                IEnv<DerivedEnv, EnvTraits>& env,
+                parameters_set params)
+{
+    using state_t = typename AgentTraits::state_t;
+    using action_t = typename AgentTraits::action_t;
+
+    std::unordered_map<state_t, int> n_s;
+    std::unordered_map<state_t, std::unordered_map<action_t, int>> n_sa;
+
+    for(size_t n = 0; n < params.episodes_count; ++n) {
+
+        env.reset();
+
+        auto init_step = env.init(agent);
+        state_t state = agent.observe(init_step.obs);
+        action_t action;
+
+        while(true) {
+
+            action = agent.policy(state);
+
+            auto [obs, reward, done] = env.step(agent, action);
+
+            state_t new_state = agent.observe(obs);
+            double max_action = agent.value_action(new_state, agent.get_best_action(new_state));
+            double& current_value_action = agent.value_action(state, action);
+
+            current_value_action += params.learning_rate(++n_sa[state][action]) * (reward + params.discont * max_action - current_value_action);
+            agent.update_policy(state, params.exploration_prob(++n_s[state]));
+            state = new_state;
+
+            if(done)
+                break;
+        }
+    }
 }
 
 template<typename AgentTraits,
@@ -359,10 +397,12 @@ void sarsa(IApproxAgent<DerivedAgent, AgentTraits, Approximation>& agent,
     }
 }
 
+
 } // namespace rl::algorithms
 
 
 namespace rl {
+
 
 using rl::algorithms::parameters_set;
 using rl::algorithms::create_default_params_set;
@@ -373,6 +413,7 @@ using rl::algorithms::value_iteration;
 using rl::algorithms::first_visit_mc_prediction;
 using rl::algorithms::first_visit_mc_control;
 using rl::algorithms::sarsa;
+using rl::algorithms::q_learning;
 
 
 } // namespace rl

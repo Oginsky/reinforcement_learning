@@ -48,18 +48,18 @@ public:
         derived->for_each_impl(std::move(f));
     }
 
-    size_t id() const { return id_; }
+    std::size_t id() const { return id_; }
 
 protected:
     derived_t* derived;
 
 private:
-    size_t next_id() {
-        static size_t ID_{0};
+    std::size_t next_id() {
+        static std::size_t ID_{0};
         return ++ID_;
     }
 
-    size_t id_;
+    std::size_t id_;
 
 };
 
@@ -92,8 +92,8 @@ public:
         return derived->observe_impl(observation);
     }
 
-    action_t policy(observation_t observation) {
-        return derived->policy_impl(observation);
+    action_t policy(state_t state, double eps = 0.0) {
+        return derived->policy_impl(state, eps);
     }
 
     void update_policy(state_t state, double eps) {
