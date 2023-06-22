@@ -9,6 +9,8 @@ namespace rl {
 template <typename Derived, typename Traits>
 struct IAgent {
 
+    static_assert (rl::traits::is_agent_traits<Traits>::value, "Traits must be of type AgentTraits");
+
     using traits_t = Traits;
     using action_t = typename traits_t::action_t;
     using state_t = typename traits_t::state_t;
@@ -67,11 +69,20 @@ private:
 template <typename Derived, typename Traits>
 struct IEnvAgent : public IAgent<Derived, Traits>
 {
+    static_assert (rl::traits::is_approximation_type_v<typename Traits::approximation_t>, "Traits must be of type AgentTraits");
+
+    // models types
     using traits_t = typename IAgent<Derived, Traits>::traits_t;
     using action_t = typename traits_t::action_t;
     using state_t = typename traits_t::state_t;
     using observation_t = typename traits_t::observation_t;
+
+    // impl
     using IAgent<Derived, Traits>::derived;
+
+    // approximation types
+    using approximation_t = typename traits_t::approximation_t;
+    using value_type = typename approximation_t::value_type;
 
 public:
     IEnvAgent()
@@ -80,12 +91,12 @@ public:
 
     virtual ~IEnvAgent() {}
 
-    double& value_action(state_t state, action_t action) {
+    value_type value_action(state_t state, action_t action) {
         return derived->value_action_impl(state, action);
     }
 
-    action_t get_best_action(state_t state) {
-        return derived->get_best_action_impl(state);
+    action_t best_action(state_t state) {
+        return derived->best_action_impl(state);
     }
 
     state_t observe(observation_t observation) {
@@ -100,46 +111,6 @@ public:
         derived->update_policy_impl(state, eps);
     }
 
-public:
-};
-
-template <typename Derived, typename Traits, typename Approximation>
-struct IApproxAgent : public IAgent<Derived, Traits>
-{
-    using traits_t = Traits;
-    using action_t = typename traits_t::action_t;
-    using state_t = typename traits_t::state_t;
-    using observation_t = typename traits_t::observation_t;
-
-    using approx_state_t = typename Approximation::approx_state_t;
-    using IAgent<Derived, Traits>::derived;
-
-public:
-    IApproxAgent(double eps = 0.0)
-        : IAgent<Derived, Traits>(),
-          eps_(eps)
-    { }
-
-    virtual ~IApproxAgent() {}
-
-    approx_state_t value_action(state_t state, action_t action) {
-        return derived->value_action_impl(state, action);
-    }
-
-    action_t get_best_action(state_t state) {
-        return derived->get_best_action_impl(state);
-    }
-
-    action_t policy(observation_t observation) {
-        return derived->policy_impl(observation);
-    }
-
-    void update_policy(state_t state, double eps) {
-        derived->update_policy_impl(state, eps);
-    }
-
-public:
-    double eps_;
 };
 
 

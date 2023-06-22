@@ -129,8 +129,8 @@ public:
 
     generate_episode(const IEnvAgent<DerivedAgent, agent_traits>& agent,
                      const IEnv<DerivedEnv, env_traits>& env,
-                     size_t count)
-        : agent_(agent), env_(env), current_(0), count_(count)
+                     const parameters_set& params)
+        : agent_(agent), env_(env), current_(0), params_(params)
     { }
 
     episode_t operator()() {
@@ -151,7 +151,7 @@ public:
     }
 
     bool operator>>(episode_t& episode) {
-        if(current_ >= count_) return false;
+        if(current_ >= params_.episodes_count) return false;
 
         episode_t{}.swap(episode); // clear ptr
         episode = std::move((*this)());
@@ -168,7 +168,7 @@ private:
     IEnvAgent<DerivedAgent, AgentTraits> agent_;
     IEnv<DerivedEnv, EnvTraits> env_;
     size_t current_{0};
-    size_t count_{0};
+    parameters_set params_;
 };
 
 template<typename AgentTraits,
@@ -188,7 +188,7 @@ public:
 
     void operator()() {
         std::unordered_map<state_t, int> N;
-        generate_episode episodes_gen(agent_, env_, params_.episodes_count);
+        generate_episode episodes_gen(agent_, env_, params_);
         auto episode = episodes_gen.empty_episode();
 
         while(episodes_gen >> episode) {
@@ -241,7 +241,7 @@ void first_visit_mc_control(IEnvAgent<DerivedAgent, AgentTraits>& agent,
 
     std::unordered_map<state_t, std::unordered_map<action_t, int>> n_sa;
     std::unordered_map<state_t, int> n_s;
-    generate_episode episodes_gen{agent, env, params.episodes_count};
+    generate_episode episodes_gen{agent, env, params};
     auto episode = episodes_gen.empty_episode();
 
     while(episodes_gen >> episode) {
@@ -278,21 +278,18 @@ void q_learning(IEnvAgent<DerivedAgent, AgentTraits>& agent,
     std::unordered_map<state_t, std::unordered_map<action_t, int>> n_sa;
 
     for(size_t n = 0; n < params.episodes_count; ++n) {
-
         env.reset();
-
         auto init_step = env.init(agent);
+
         state_t state = agent.observe(init_step.obs);
         action_t action;
 
         while(true) {
-
             action = agent.policy(state);
-
             auto [obs, reward, done] = env.step(agent, action);
 
             state_t new_state = agent.observe(obs);
-            double max_action = agent.value_action(new_state, agent.get_best_action(new_state));
+            double max_action = agent.value_action(new_state, agent.best_action(new_state));
             double& current_value_action = agent.value_action(state, action);
 
             current_value_action += params.learning_rate(++n_sa[state][action]) * (reward + params.discont * max_action - current_value_action);
@@ -316,14 +313,14 @@ void sarsa(IEnvAgent<DerivedAgent, AgentTraits>& agent,
 {
     using state_t = typename AgentTraits::state_t;
     using action_t = typename AgentTraits::action_t;
-    using observation_t = typename AgentTraits::observation_t;
-    using step_t = typename IEnv<DerivedEnv, AgentTraits>::step_t;
+    static constexpr bool is_table_based = traits::is_table_based_agent<AgentTraits>::value;
+    using container_t = typename traits::container_type<AgentTraits>::type;
 
     std::unordered_map<state_t, int> n_s;
     std::unordered_map<state_t, std::unordered_map<action_t, int>> n_sa;
 
     for(size_t n = 0; n < params.episodes_count; ++n) {
-        std::unordered_map<state_t, std::unordered_map<action_t, double>> e;
+        container_t e;
         env.reset();
         auto init_step = env.init(agent);
         state_t state1 = agent.observe(init_step.obs), state2;
@@ -336,11 +333,21 @@ void sarsa(IEnvAgent<DerivedAgent, AgentTraits>& agent,
             state2 = agent.observe(obs); action2 = agent.policy(state2);
 
             double delta = reward + params.discont*agent.value_action(state2, action2) - agent.value_action(state1, action1);
-            e[state1][action1]++;
+
+            if constexpr (is_table_based) e[state1][action1]++;
+            else e(state1, action1) += 1.0;
 
             agent.for_each([&](state_t state, action_t action){
-                agent.value_action(state, action) += params.learning_rate(nsa) * delta * e[state][action];
-                e[state][action] *= params.discont * lambda;
+                if constexpr (is_table_based) {
+                    agent.value_action(state, action) += params.learning_rate(nsa) * delta * e[state][action];
+                    e[state][action] *= params.discont * lambda;
+                }
+                else {
+                    typename AgentTraits::approximation_t::value_type tmp = e(state, action) * params.learning_rate(nsa) * delta;
+                    agent.value_action(state, action) += tmp;
+                    e(state, action) *= params.discont * lambda;
+                }
+
             });
 
             agent.update_policy(state1, params.exploration_prob(ns));
@@ -351,52 +358,6 @@ void sarsa(IEnvAgent<DerivedAgent, AgentTraits>& agent,
     }
 
 }
-
-template<typename AgentTraits,
-         typename EnvTraits,
-         typename DerivedAgent,
-         typename DerivedEnv,
-         typename Approximation>
-void sarsa(IApproxAgent<DerivedAgent, AgentTraits, Approximation>& agent,
-           IEnv<DerivedEnv, EnvTraits>& env,
-           double lambda,
-           parameters_set params)
-{
-    using state_t = typename AgentTraits::state_t;
-    using action_t = typename AgentTraits::action_t;
-    using observation_t = typename AgentTraits::observation_t;
-    using step_t = typename IEnv<DerivedEnv, AgentTraits>::step_t;
-    using approx_state_t = typename Approximation::approx_state_t;
-
-    double alpha = 0.01;
-    double discont = params.discont;
-
-    for(size_t n = 0; n < params.episodes_count; ++n) {
-        Approximation e;
-        env.reset();
-        auto init_step = env.init(agent);
-        state_t state1 = init_step.obs, state2;
-        action_t action1 = agent.policy(state1), action2;
-
-        while(true) {
-            auto [obs, reward, done] = env.step(agent, action1);
-            state2 = obs; action2 = agent.policy(state2);
-            double delta = reward + discont * agent.value_action(state2, action2) - agent.value_action(state1, action1);
-            e(state1, action1) += 1.0;
-
-            agent.for_each([&](state_t state, action_t action){
-                approx_state_t tmp = e(state, action) * alpha * delta;
-                agent.value_action(state, action) += tmp;
-                e(state, action) *= discont * lambda;
-            });
-
-            state1 = state2; action1 = action2;
-            if(done) break;
-        }
-
-    }
-}
-
 
 } // namespace rl::algorithms
 

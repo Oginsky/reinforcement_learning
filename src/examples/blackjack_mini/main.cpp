@@ -95,7 +95,6 @@ int main() {
                               [](int n){return 1.0 / (double)n;},
                               [](int n){return 100.0 / (100.0 + n);});
 
-
     rl::first_visit_mc_control(mc_agent, env, params);
     converse_value_action(mc_agent.value_action, mc_agent.value_func);
     write_in_file("blackjack_value_function.txt", mc_agent.value_func);

@@ -10,7 +10,7 @@
 
 namespace blackjack {
 
-using agent_traits = rl::AgentTraits<env_traits_, std::pair<int, int>>;
+using agent_traits = rl::TableAgentTraits<env_traits, std::pair<int, int>>;
 
 struct Agent : public rl::IEnvAgent<Agent, agent_traits>  {
 
@@ -43,7 +43,7 @@ struct Agent : public rl::IEnvAgent<Agent, agent_traits>  {
         return value_action[state][action];
     }
 
-    action_t get_best_action_impl(state_t state) {
+    action_t best_action_impl(state_t state) {
         return (value_action[state][action_t::hit] > value_action[state][action_t::stick])
                 ? action_t::hit : action_t::stick;
     }
@@ -53,14 +53,14 @@ struct Agent : public rl::IEnvAgent<Agent, agent_traits>  {
     }
 
     action_t policy_impl(state_t& state, double eps) {
-        action_t subopti = get_best_action_impl(state);
+        action_t subopti = best_action_impl(state);
         action_t other = (subopti == action_t::hit) ? action_t::stick : action_t::hit;
 
         return rand(policy_[state][other]) ? other : subopti;
     }
 
     void update_policy_impl(state_t state, double eps) {
-        action_t subopti = get_best_action_impl(state);
+        action_t subopti = best_action_impl(state);
         action_t other = (subopti == action_t::hit) ? action_t::stick : action_t::hit;
 
         policy_[state][subopti] = 1.0 - eps + eps / 2.0;
