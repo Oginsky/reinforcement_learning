@@ -9,7 +9,7 @@ namespace rl {
 template <typename Derived, typename Traits>
 struct IAgent {
 
-    static_assert (rl::traits::is_agent_traits<Traits>::value, "Traits must be of type AgentTraits");
+    // static_assert (rl::traits::is_agent_traits<Traits>::value, "Traits must be of type AgentTraits");
 
     using traits_t = Traits;
     using action_t = typename traits_t::action_t;
@@ -82,6 +82,7 @@ struct IEnvAgent : public IAgent<Derived, Traits>
 
     // approximation types
     using approximation_t = typename traits_t::approximation_t;
+    using container_t = typename traits::container_type<Traits>::type;
     using value_type = typename approximation_t::value_type;
 
 public:
@@ -109,6 +110,10 @@ public:
 
     void update_policy(state_t state, double eps) {
         derived->update_policy_impl(state, eps);
+    }
+
+    container_t create_value_action_container() {
+        return derived->create_value_action_container_impl();
     }
 
 };

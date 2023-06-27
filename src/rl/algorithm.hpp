@@ -306,6 +306,64 @@ template<typename AgentTraits,
          typename EnvTraits,
          typename DerivedAgent,
          typename DerivedEnv>
+void double_q_learning(IEnvAgent<DerivedAgent, AgentTraits>& agent,
+                       IEnv<DerivedEnv, EnvTraits>& env,
+                       parameters_set params)
+{
+    using state_t = typename AgentTraits::state_t;
+    using action_t = typename AgentTraits::action_t;
+    using container_t = typename traits::container_type<AgentTraits>::type;
+
+    container_t q_1 = agent.create_value_action_container(), *pick_q = &q_1;
+    container_t q_2 = agent.create_value_action_container(), *estimate_q = &q_2;
+
+    std::unordered_map<state_t, int> n_s;
+    std::unordered_map<state_t, std::unordered_map<action_t, int>> n_sa;
+
+    for(size_t n = 0; n < params.episodes_count; ++n) {
+        env.reset();
+        auto init_step = env.init(agent);
+
+        state_t state = agent.observe(init_step.obs);
+        action_t action;
+
+        while(true) {
+            action = agent.best_action(state);
+
+            auto [obs, reward, done] = env.step(agent, action);
+
+            state_t new_state = agent.observe(obs);
+
+            bool swap = rand(0.5);
+
+            if(swap)
+                std::swap(pick_q, estimate_q);
+
+            action_t max_action = std::max_element((*pick_q)[new_state].begin(), (*pick_q)[new_state].end())->first;
+            double& current_value_action = (*pick_q)[state][action];
+            current_value_action += params.learning_rate(++n_sa[state][action])
+                                 * (reward + params.discont * ((*estimate_q)[new_state][max_action]) - current_value_action);
+
+            agent.for_each_action(state, [&agent, &q_1, &q_2] (state_t state, action_t action) {
+                agent.value_action(state, action) = (q_1[state][action] + q_2[state][action]) / 2.0;
+            });
+
+            agent.update_policy(state, params.exploration_prob(++n_s[state]));
+            state = new_state;
+
+            if(swap)
+                std::swap(pick_q, estimate_q);
+
+            if(done)
+                break;
+        }
+    }
+}
+
+template<typename AgentTraits,
+         typename EnvTraits,
+         typename DerivedAgent,
+         typename DerivedEnv>
 void sarsa(IEnvAgent<DerivedAgent, AgentTraits>& agent,
            IEnv<DerivedEnv, EnvTraits>& env,
            double lambda,
@@ -375,6 +433,7 @@ using rl::algorithms::first_visit_mc_prediction;
 using rl::algorithms::first_visit_mc_control;
 using rl::algorithms::sarsa;
 using rl::algorithms::q_learning;
+using rl::algorithms::double_q_learning;
 
 
 } // namespace rl

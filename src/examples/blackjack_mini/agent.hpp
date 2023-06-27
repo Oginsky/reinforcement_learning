@@ -74,10 +74,30 @@ struct Agent : public rl::IEnvAgent<Agent, agent_traits>  {
                 f(state_it.first, action_it.first);
     }
 
+    template<typename Callable>
+    void for_each_action_impl(state_t state, Callable&& f) {
+        for(auto& action_it: value_action[state])
+            f(state, action_it.first);
+    }
+
+    container_t create_value_action_container_impl() {
+        container_t new_container;
+
+        for(int i = -10; i < 32; ++i) {
+            for(int j = -10; j < 26; ++j) {
+                state_t state{i, j};
+                new_container[state][action_t::hit] = 0.0;
+                new_container[state][action_t::stick] = 0.0;
+            }
+        }
+
+        return new_container;
+    }
+
 public:
     std::map<state_t, double> value_func;
-    std::map<state_t, std::map<action_t, double>> value_action;
-    std::map<state_t, std::map<action_t, double>> policy_;
+    container_t value_action;
+    container_t policy_;
 };
 
 
