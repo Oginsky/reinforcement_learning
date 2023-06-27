@@ -16,7 +16,7 @@ namespace blackjack {
 
 using interval_t = std::pair<int, int>;
 using action_t = env_traits::action_t;
-using state_t = env_traits::state_t;
+using state_t = env_traits::observation_t;
 
 static std::vector<interval_t> dealer_intervals = {{1, 4}, {4, 7}, {7, 10}};
 static std::vector<interval_t> player_intervals = {{1, 6}, {4, 9}, {7, 12}, {10, 15}, {13,18}, {16, 21}};
@@ -53,6 +53,7 @@ struct linear_approximation {
     using param_vec_t = std::vector<double>;
     using feature_vec_t = std::vector<bool>;
     using approx_state_t = rl::linear_vector<APPROXIMATE_SIZE, param_vec_t>;
+    using value_type = approx_state_t; // for approximation traits
 
 public:
     linear_approximation()
@@ -87,11 +88,14 @@ private:
 
 };
 
-struct LinearAgent : rl::IApproxAgent<LinearAgent, env_traits, linear_approximation> {
+using linear_agent_traits = rl::AgentTraits<env_traits, state_t, linear_approximation>;
+
+struct LinearAgent : rl::IEnvAgent<LinearAgent, linear_agent_traits> {
+    using approx_state_t = approximation_t::value_type;
 
 public:
     LinearAgent(double eps = 0.0)
-        : IApproxAgent(eps)
+        : IEnvAgent(), eps_(eps)
     {
         reinit_impl();
     }
@@ -110,16 +114,20 @@ public:
         return (q_hit > q_stick) ? action_t::hit : action_t::stick;
     }
 
-    state_t get_state_impl(observation_t observation) {
+    state_t observe_impl(observation_t observation) {
         return observation;
     }
 
-    action_t policy_impl(observation_t observation) {
+    action_t policy_impl(observation_t observation, double eps) {
         state_t state = observation;
         action_t subopti = get_best_action_impl(state);
         action_t other = (subopti == action_t::hit) ? action_t::stick : action_t::hit;
 
         return rand(eps_) ? other : subopti;
+    }
+
+    void update_policy_impl(state_t state [[maybe_unused]], double eps) {
+       eps_ = eps;
     }
 
     template<typename Callable>
@@ -136,6 +144,7 @@ public:
 
 public:
     linear_approximation value_action;
+    double eps_;
 
 };
 

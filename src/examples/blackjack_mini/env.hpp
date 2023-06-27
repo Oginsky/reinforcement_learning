@@ -25,11 +25,10 @@ struct hash<std::pair<int, int>> {
 
 namespace blackjack {
 
-using env_traits = rl::Traits<model::action_e, std::pair<int, int>>;
-using env_traits_ = rl::EnvTraits<std::pair<int, int>, model::action_e>;
+using env_traits = rl::EnvTraits<std::pair<int, int>, model::action_e>;
 
 
-struct Env : rl::IEnv<Env, env_traits_> {
+struct Env : rl::IEnv<Env, env_traits> {
 
     static constexpr double discont{1.0};
 
